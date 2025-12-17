@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>2次関数グラフ探究 y = a(x-p)² + q</title>
+  <style>
+    /* ============================================
+       基本リセットとフォント
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      /* カラーパレット：落ち着いた教育的な配色 */
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-dark: #1e293b;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --accent-pink: #ec4899;
+      --accent-purple: #8b5cf6;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --graph-line: #3b82f6;
+      --graph-grid: #e2e8f0;
+      --graph-axis: #64748b;
+      --vertex-color: #ef4444;
+      --axis-line-color: #f59e0b;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      min-height: 100dvh;
+      color: var(--text-primary);
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* ============================================
+       メインレイアウト（デスクトップ：横並び）
+       ============================================ */
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      grid-template-rows: 1fr;
+      height: 100vh;
+      height: 100dvh;
+      gap: 0;
+    }
+
+    /* ============================================
+       左側：グラフ領域
+       ============================================ */
+    .graph-area {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary);
+      position: relative;
+    }
+
+    /* 式の表示バー */
+    .formula-bar {
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #334155 100%);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .formula-display {
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #fff;
+      font-family: 'Times New Roman', 'Hiragino Mincho ProN', serif;
+      letter-spacing: 0.02em;
+    }
+
+    .formula-highlight {
+      color: var(--accent-orange);
+      font-weight: 700;
+    }
+
+    .formula-vertex {
+      font-size: 1rem;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.1);
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+
+    .formula-vertex span {
+      color: var(--vertex-color);
+      font-weight: 600;
+    }
+
+    /* キャンバスコンテナ */
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+    }
+
+    #graphCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+
+    /* グラフ上の情報表示 */
+    .graph-info {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .info-badge {
+      background: rgba(255,255,255,0.95);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border: 1px solid var(--border-color);
+    }
+
+    .info-badge.convex-up {
+      border-left: 4px solid var(--accent-pink);
+    }
+
+    .info-badge.convex-down {
+      border-left: 4px solid var(--accent-blue);
+    }
+
+    .info-badge .label {
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+    }
+
+    .info-badge .value {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    /* 凡例 */
+    .legend {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(255,255,255,0.95);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-line {
+      width: 20px;
+      height: 3px;
+      border-radius: 2px;
+    }
+
+    .legend-line.parabola { background: var(--graph-line); }
+    .legend-line.axis-line { 
+      background: var(--axis-line-color); 
+      height: 2px;
+      border: 1px dashed var(--axis-line-color);
+      background: transparent;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--vertex-color);
+    }
+
+    /* ============================================
+       右側：コントロールパネル
+       ============================================ */
+    .control-panel {
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .panel-header {
+      text-align: center;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .panel-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .panel-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* パラメータカード */
+    .param-card {
+      background: var(--bg-primary);
+      border-radius: 16px;
+      padding: 18px;
+      border: 1px solid var(--border-color);
+      transition: box-shadow 0.2s;
+    }
+
+    .param-card:hover {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .param-card.highlight-a { border-left: 4px solid var(--accent-blue); }
+    .param-card.highlight-p { border-left: 4px solid var(--accent-green); }
+    .param-card.highlight-q { border-left: 4px solid var(--accent-purple); }
+
+    .param-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .param-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: 'Times New Roman', serif;
+    }
+
+    .param-name.a { color: var(--accent-blue); }
+    .param-name.p { color: var(--accent-green); }
+    .param-name.q { color: var(--accent-purple); }
+
+    .param-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      font-family: 'SF Mono', 'Menlo', monospace;
+      color: var(--text-primary);
+      min-width: 60px;
+      text-align: right;
+    }
+
+    .param-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    /* カスタムスライダー */
+    .slider-container {
+      position: relative;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      border-radius: 5px;
+      background: linear-gradient(90deg, var(--border-color), var(--border-color));
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px var(--accent-blue);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+    }
+
+    input[type="range"]::-webkit-slider-thumb:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 4px var(--accent-blue);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px var(--accent-blue);
+      cursor: pointer;
+      border: none;
+    }
+
+    .slider-a::-webkit-slider-thumb { box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px var(--accent-blue); }
+    .slider-p::-webkit-slider-thumb { box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px var(--accent-green); }
+    .slider-q::-webkit-slider-thumb { box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px var(--accent-purple); }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* プリセットボタン */
+    .preset-section {
+      background: var(--bg-primary);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid var(--border-color);
+    }
+
+    .preset-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .preset-btn {
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .preset-btn:hover {
+      background: var(--accent-blue);
+      color: #fff;
+      border-color: var(--accent-blue);
+      transform: translateY(-1px);
+    }
+
+    .preset-btn:active {
+      transform: translateY(0);
+    }
+
+    /* リセットボタン */
+    .reset-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #475569 100%);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .reset-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+
+    .reset-btn:active {
+      transform: translateY(0);
+    }
+
+    /* 補足情報 */
+    .tips-box {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 0.8rem;
+      color: #92400e;
+      line-height: 1.6;
+    }
+
+    .tips-box strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+
+    /* ============================================
+       タブレット対応 (900px以下)
+       ============================================ */
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .formula-bar {
+        order: 1;
+        padding: 12px 16px;
+      }
+
+      .formula-display {
+        font-size: 1.3rem;
+      }
+
+      .graph-area {
+        order: 2;
+      }
+
+      .control-panel {
+        order: 3;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        padding: 16px;
+        gap: 14px;
+        max-height: 45vh;
+      }
+
+      .panel-header {
+        display: none;
+      }
+
+      .param-card {
+        padding: 14px;
+      }
+
+      .tips-box {
+        display: none;
+      }
+
+      .preset-section {
+        padding: 12px;
+      }
+    }
+
+    /* ============================================
+       スマートフォン対応 (480px以下)
+       ============================================ */
+    @media (max-width: 480px) {
+      .formula-bar {
+        padding: 10px 12px;
+        gap: 10px;
+      }
+
+      .formula-display {
+        font-size: 1.1rem;
+      }
+
+      .formula-vertex {
+        font-size: 0.85rem;
+        padding: 4px 10px;
+      }
+
+      .control-panel {
+        padding: 12px;
+        gap: 12px;
+        max-height: 50vh;
+      }
+
+      .param-card {
+        padding: 12px;
+        border-radius: 12px;
+      }
+
+      .param-header {
+        margin-bottom: 8px;
+      }
+
+      .param-name {
+        font-size: 1rem;
+      }
+
+      .param-value {
+        font-size: 1.2rem;
+      }
+
+      .param-desc {
+        font-size: 0.75rem;
+        margin-bottom: 10px;
+      }
+
+      input[type="range"] {
+        height: 8px;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        width: 32px;
+        height: 32px;
+      }
+
+      .preset-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
+      .preset-btn {
+        padding: 10px 8px;
+        font-size: 0.75rem;
+      }
+
+      .reset-btn {
+        padding: 12px;
+        font-size: 0.9rem;
+      }
+
+      .graph-info {
+        top: 8px;
+        left: 8px;
+        gap: 6px;
+      }
+
+      .info-badge {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+      }
+
+      .legend {
+        bottom: 8px;
+        left: 8px;
+        padding: 8px 10px;
+        font-size: 0.7rem;
+      }
+    }
+
+    /* 横向きスマホ対応 */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .container {
+        grid-template-columns: 1fr 280px;
+        grid-template-rows: 1fr;
+      }
+
+      .formula-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        padding: 8px 16px;
+        background: rgba(30, 41, 59, 0.95);
+      }
+
+      .canvas-container {
+        padding-top: 50px;
+      }
+
+      .control-panel {
+        border-left: 1px solid var(--border-color);
+        border-top: none;
+        max-height: none;
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .param-card {
+        padding: 10px;
+      }
+
+      .preset-section, .tips-box {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 左側：グラフ領域 -->
+    <div class="graph-area">
+      <!-- 式の表示バー -->
+      <div class="formula-bar">
+        <div class="formula-display" id="formulaDisplay">
+          y = <span class="formula-highlight" id="formulaA">1</span>(x − <span class="formula-highlight" id="formulaP">0</span>)² + <span class="formula-highlight" id="formulaQ">0</span>
+        </div>
+        <div class="formula-vertex">
+          頂点 (<span id="vertexX">0</span>, <span id="vertexY">0</span>)
+        </div>
+      </div>
+
+      <!-- キャンバス -->
+      <div class="canvas-container">
+        <canvas id="graphCanvas"></canvas>
+
+        <!-- グラフ上の情報 -->
+        <div class="graph-info">
+          <div class="info-badge" id="convexBadge">
+            <div class="label">グラフの向き</div>
+            <div class="value" id="convexText">下に凸 ∪</div>
+          </div>
+          <div class="info-badge">
+            <div class="label">対称軸</div>
+            <div class="value" id="axisText">x = 0</div>
+          </div>
+        </div>
+
+        <!-- 凡例 -->
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-line parabola"></div>
+            <span>放物線</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-line axis-line"></div>
+            <span>対称軸</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>頂点</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側：コントロールパネル -->
+    <div class="control-panel">
+      <div class="panel-header">
+        <div class="panel-title">📐 パラメータ調整</div>
+        <div class="panel-subtitle">スライダーを動かしてグラフの変化を観察しよう</div>
+      </div>
+
+      <!-- パラメータ a -->
+      <div class="param-card highlight-a">
+        <div class="param-header">
+          <span class="param-name a">a</span>
+          <span class="param-value" id="valueA">1.0</span>
+        </div>
+        <div class="param-desc">
+          グラフの「開き具合」と「向き」を決める<br>
+          正 → 下に凸 ／ 負 → 上に凸
+        </div>
+        <div class="slider-container">
+          <input type="range" class="slider-a" id="sliderA" min="-3" max="3" step="0.1" value="1">
+          <div class="slider-labels">
+            <span>-3</span>
+            <span>0</span>
+            <span>3</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- パラメータ p -->
+      <div class="param-card highlight-p">
+        <div class="param-header">
+          <span class="param-name p">p</span>
+          <span class="param-value" id="valueP">0.0</span>
+        </div>
+        <div class="param-desc">
+          頂点のx座標（横方向の移動）<br>
+          正 → 右へ ／ 負 → 左へ
+        </div>
+        <div class="slider-container">
+          <input type="range" class="slider-p" id="sliderP" min="-5" max="5" step="0.1" value="0">
+          <div class="slider-labels">
+            <span>-5</span>
+            <span>0</span>
+            <span>5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- パラメータ q -->
+      <div class="param-card highlight-q">
+        <div class="param-header">
+          <span class="param-name q">q</span>
+          <span class="param-value" id="valueQ">0.0</span>
+        </div>
+        <div class="param-desc">
+          頂点のy座標（縦方向の移動）<br>
+          正 → 上へ ／ 負 → 下へ
+        </div>
+        <div class="slider-container">
+          <input type="range" class="slider-q" id="sliderQ" min="-5" max="5" step="0.1" value="0">
+          <div class="slider-labels">
+            <span>-5</span>
+            <span>0</span>
+            <span>5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- プリセット -->
+      <div class="preset-section">
+        <div class="preset-title">⚡ クイック設定</div>
+        <div class="preset-grid">
+          <button class="preset-btn" data-a="1" data-p="0" data-q="0">y = x²</button>
+          <button class="preset-btn" data-a="-1" data-p="0" data-q="0">y = -x²</button>
+          <button class="preset-btn" data-a="2" data-p="0" data-q="0">y = 2x²</button>
+          <button class="preset-btn" data-a="0.5" data-p="0" data-q="0">y = ½x²</button>
+          <button class="preset-btn" data-a="1" data-p="2" data-q="-3">頂点(2,-3)</button>
+          <button class="preset-btn" data-a="-1" data-p="-1" data-q="4">頂点(-1,4)</button>
+        </div>
+      </div>
+
+      <!-- ヒント -->
+      <div class="tips-box">
+        <strong>💡 観察のポイント</strong>
+        a = 0 にするとどうなる？<br>
+        |a| を大きくするとグラフは広がる？狭まる？
+      </div>
+
+      <!-- リセットボタン -->
+      <button class="reset-btn" id="resetBtn">
+        ↺ 初期状態に戻す
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // グローバル変数
+    // ============================================
+    let canvas, ctx;
+    let a = 1, p = 0, q = 0;  // 2次関数のパラメータ
+
+    // 表示範囲（数学座標）
+    const VIEW = {
+      xMin: -8, xMax: 8,
+      yMin: -6, yMax: 6
+    };
+
+    // ============================================
+    // 初期化
+    // ============================================
+    function init() {
+      canvas = document.getElementById('graphCanvas');
+      ctx = canvas.getContext('2d');
+
+      // キャンバスサイズを親要素に合わせる
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // スライダーのイベント設定
+      document.getElementById('sliderA').addEventListener('input', onSliderChange);
+      document.getElementById('sliderP').addEventListener('input', onSliderChange);
+      document.getElementById('sliderQ').addEventListener('input', onSliderChange);
+
+      // プリセットボタン
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', onPresetClick);
+      });
+
+      // リセットボタン
+      document.getElementById('resetBtn').addEventListener('click', resetParams);
+
+      // 初回描画
+      updateDisplay();
+      draw();
+    }
+
+    // ============================================
+    // キャンバスのリサイズ（高DPI対応）
+    // ============================================
+    function resizeCanvas() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    // ============================================
+    // 座標変換（数学座標 ↔ Canvas座標）
+    // ============================================
+    function toCanvasX(mathX) {
+      const w = canvas.clientWidth;
+      return (mathX - VIEW.xMin) / (VIEW.xMax - VIEW.xMin) * w;
+    }
+
+    function toCanvasY(mathY) {
+      const h = canvas.clientHeight;
+      // Y軸は反転（数学座標は上が正）
+      return h - (mathY - VIEW.yMin) / (VIEW.yMax - VIEW.yMin) * h;
+    }
+
+    function toMathX(canvasX) {
+      const w = canvas.clientWidth;
+      return VIEW.xMin + (canvasX / w) * (VIEW.xMax - VIEW.xMin);
+    }
+
+    // ============================================
+    // 描画メイン
+    // ============================================
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+
+      // 背景クリア
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+
+      drawGrid();
+      drawAxes();
+      drawAxisOfSymmetry();
+      drawParabola();
+      drawVertex();
+    }
+
+    // グリッド線を描画
+    function drawGrid() {
+      ctx.strokeStyle = '#f1f5f9';
+      ctx.lineWidth = 1;
+
+      // 縦線
+      for (let x = Math.ceil(VIEW.xMin); x <= VIEW.xMax; x++) {
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(x), 0);
+        ctx.lineTo(toCanvasX(x), canvas.clientHeight);
+        ctx.stroke();
+      }
+
+      // 横線
+      for (let y = Math.ceil(VIEW.yMin); y <= VIEW.yMax; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, toCanvasY(y));
+        ctx.lineTo(canvas.clientWidth, toCanvasY(y));
+        ctx.stroke();
+      }
+    }
+
+    // 座標軸を描画
+    function drawAxes() {
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+
+      // x軸
+      ctx.beginPath();
+      ctx.moveTo(0, toCanvasY(0));
+      ctx.lineTo(canvas.clientWidth, toCanvasY(0));
+      ctx.stroke();
+
+      // y軸
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(0), 0);
+      ctx.lineTo(toCanvasX(0), canvas.clientHeight);
+      ctx.stroke();
+
+      // 軸ラベル
+      ctx.fillStyle = '#64748b';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('x', canvas.clientWidth - 20, toCanvasY(0) + 8);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('y', toCanvasX(0) + 8, 20);
+
+      // 目盛り数字
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+
+      for (let x = Math.ceil(VIEW.xMin); x <= VIEW.xMax; x++) {
+        if (x !== 0) {
+          ctx.fillText(x.toString(), toCanvasX(x), toCanvasY(0) + 6);
+        }
+      }
+
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (let y = Math.ceil(VIEW.yMin); y <= VIEW.yMax; y++) {
+        if (y !== 0) {
+          ctx.fillText(y.toString(), toCanvasX(0) - 8, toCanvasY(y));
+        }
+      }
+
+      // 原点
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText('O', toCanvasX(0) - 6, toCanvasY(0) + 6);
+    }
+
+    // 対称軸を描画
+    function drawAxisOfSymmetry() {
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(p), 0);
+      ctx.lineTo(toCanvasX(p), canvas.clientHeight);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+    }
+
+    // 放物線を描画
+    function drawParabola() {
+      if (Math.abs(a) < 0.001) {
+        // a ≈ 0 のとき、直線 y = q を描画
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, toCanvasY(q));
+        ctx.lineTo(canvas.clientWidth, toCanvasY(q));
+        ctx.stroke();
+        return;
+      }
+
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+
+      const step = 0.05;
+      let first = true;
+
+      for (let x = VIEW.xMin - 1; x <= VIEW.xMax + 1; x += step) {
+        const y = a * Math.pow(x - p, 2) + q;
+
+        // 画面外に大きくはみ出すときはスキップ
+        if (y < VIEW.yMin - 10 || y > VIEW.yMax + 10) {
+          first = true;
+          continue;
+        }
+
+        const cx = toCanvasX(x);
+        const cy = toCanvasY(y);
+
+        if (first) {
+          ctx.moveTo(cx, cy);
+          first = false;
+        } else {
+          ctx.lineTo(cx, cy);
+        }
+      }
+
+      ctx.stroke();
+    }
+
+    // 頂点を描画
+    function drawVertex() {
+      const cx = toCanvasX(p);
+      const cy = toCanvasY(q);
+
+      // 外側の円（グロー効果）
+      ctx.beginPath();
+      ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+      ctx.fill();
+
+      // 内側の円
+      ctx.beginPath();
+      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#ef4444';
+      ctx.fill();
+
+      // 白い縁取り
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // ============================================
+    // UI更新
+    // ============================================
+    function onSliderChange() {
+      a = parseFloat(document.getElementById('sliderA').value);
+      p = parseFloat(document.getElementById('sliderP').value);
+      q = parseFloat(document.getElementById('sliderQ').value);
+
+      updateDisplay();
+      draw();
+    }
+
+    function updateDisplay() {
+      // スライダー値の表示を更新
+      document.getElementById('valueA').textContent = a.toFixed(1);
+      document.getElementById('valueP').textContent = p.toFixed(1);
+      document.getElementById('valueQ').textContent = q.toFixed(1);
+
+      // 式の表示を更新
+      document.getElementById('formulaA').textContent = a.toFixed(1);
+      document.getElementById('formulaP').textContent = formatNumber(p);
+      document.getElementById('formulaQ').textContent = formatNumber(q);
+
+      // 頂点座標
+      document.getElementById('vertexX').textContent = p.toFixed(1);
+      document.getElementById('vertexY').textContent = q.toFixed(1);
+
+      // 凸の向き
+      const convexBadge = document.getElementById('convexBadge');
+      const convexText = document.getElementById('convexText');
+      if (a > 0) {
+        convexText.textContent = '下に凸 ∪';
+        convexBadge.className = 'info-badge convex-down';
+      } else if (a < 0) {
+        convexText.textContent = '上に凸 ∩';
+        convexBadge.className = 'info-badge convex-up';
+      } else {
+        convexText.textContent = '直線（a = 0）';
+        convexBadge.className = 'info-badge';
+      }
+
+      // 対称軸
+      document.getElementById('axisText').textContent = `x = ${p.toFixed(1)}`;
+    }
+
+    // 数値のフォーマット（符号付き）
+    function formatNumber(n) {
+      if (n >= 0) return n.toFixed(1);
+      return `(${n.toFixed(1)})`;
+    }
+
+    // プリセットボタンクリック
+    function onPresetClick(e) {
+      const btn = e.currentTarget;
+      a = parseFloat(btn.dataset.a);
+      p = parseFloat(btn.dataset.p);
+      q = parseFloat(btn.dataset.q);
+
+      // スライダーの値も更新
+      document.getElementById('sliderA').value = a;
+      document.getElementById('sliderP').value = p;
+      document.getElementById('sliderQ').value = q;
+
+      updateDisplay();
+      draw();
+    }
+
+    // リセット
+    function resetParams() {
+      a = 1;
+      p = 0;
+      q = 0;
+
+      document.getElementById('sliderA').value = 1;
+      document.getElementById('sliderP').value = 0;
+      document.getElementById('sliderQ').value = 0;
+
+      updateDisplay();
+      draw();
+    }
+
+    // ============================================
+    // 起動
+    // ============================================
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
